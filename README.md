@@ -1,117 +1,63 @@
-# Skill de Design para o Claude Code
+# Pilha de Design para o Claude Code
 
-Este pacote instala uma skill de design no Claude Code. Depois de instalada,
-voce digita `/design` dentro do Claude Code e ele vira um designer de UI/UX:
-faz umas perguntas sobre o que voce quer, estuda sites reais de referencia,
-gera um preview de tela, valida no navegador e ajuda a aplicar no seu projeto.
+Skill `/design` reconstruida em 2026-08-19 como uma pilha de 5 camadas, uma skill por
+responsabilidade. Motivo: pesquisa mostrou que skills de design monoliticas (a versao
+anterior tinha 610 linhas) pioram o resultado - o agente se perde em regras conflitantes.
+O que funciona e verificacao (olhar o resultado renderizado e cobrar correcao), nao
+prescricao (pilhas de regras antes de gerar).
 
-Nao precisa saber programar pra usar. Voce conversa em portugues e valida
-olhando o resultado.
+## As 5 camadas
 
----
+| Camada | Skill | Origem | O que faz |
+|---|---|---|---|
+| Fundacao | `frontend-design` | anthropics/skills (oficial, versao nova) | Direcao estetica, tipografia, elemento assinatura, autocritica contra o default generico |
+| Micro | `make-interfaces-feel-better` | jakubkrehel (MIT) | Craft de microinteracao com valores exatos (press 0.96, radius concentrico, bounce 0) |
+| Pagina | `skills/motion-choreography/` (deste repo) | autoral, fontes MIT creditadas | Motion cinematografico de pagina: scrolltelling, pin/scrub, parallax, view transitions. So landing/marca, nunca dashboard |
+| Revisao | plugin `impeccable` | pbakaus/impeccable (Apache 2.0) | Detector deterministico de 59 padroes de slop + comandos /impeccable audit, polish, bolder, quieter, distill |
+| Orquestracao | `skills/design-system/` (deste repo) | autoral | O `/design`: contrato de direcao em DESIGN.md -> gerar -> verificacao full-page em 3 larguras, secao a secao, 2 rodadas |
 
-## Como baixar este pacote
+Regras de ferro da orquestracao: o brief vence; refino preserva, redesign substitui;
+direcao unica e NOMEADA; verificar a tela inteira, nunca so elementos.
 
-Nesta pagina do GitHub, clique no botao verde **`Code`** (em cima, a direita
-da lista de arquivos) e escolha **`Download ZIP`**. Salve e descompacte a pasta
-no seu computador. Depois siga a secao "Como instalar" mais abaixo.
+## O que vem neste repo
 
----
+- `skills/design-system/` - a skill `/design` (orquestradora)
+- `skills/motion-choreography/` - a camada de motion de pagina (com esqueletos GSAP/CSS de armadilhas pre-corrigidas)
+- `design-systems/` - biblioteca de 60 design systems reais (Stripe, Linear, Apple...) usada como referencia de direcao
+- `INSTALAR.sh` - instala tudo (as 2 skills locais + baixa as 2 externas + orienta o plugin)
 
-## O que vem dentro
-
-- `skills/design-system/` - a skill principal (o `/design`)
-- `skills/design-motion-principles/` - skill de apoio (auditoria de animacao)
-- `design-systems/` - biblioteca com 60 design systems reais (Stripe, Linear,
-  Apple, Vercel, etc.) + tabelas de cor, tipografia e padroes de industria.
-  E daqui que a skill tira o "bom gosto". Sem essa pasta a skill roda pela metade.
-
-Tudo junto tem cerca de 5 MB.
-
----
-
-## Como instalar (escolha o seu caso)
-
-### Linux, Mac ou Windows com WSL
-Abra o terminal na pasta deste pacote e rode:
+## Instalar (Linux / Mac / WSL)
 
 ```bash
-bash INSTALAR.sh
+git clone https://github.com/arsprengel/design-skill-claude-code.git
+cd design-skill-claude-code && ./INSTALAR.sh
 ```
 
-### Windows (sem WSL, PowerShell)
-Clique com o botao direito em `INSTALAR.ps1` e escolha "Executar com o PowerShell".
-Se o Windows reclamar de permissao, abra o PowerShell e rode:
+O plugin impeccable e instalado via Claude Code (o script tenta; se falhar, rode dentro
+do Claude Code):
 
-```powershell
-powershell -ExecutionPolicy Bypass -File INSTALAR.ps1
+```
+claude plugin marketplace add pbakaus/impeccable
+claude plugin install impeccable@impeccable
 ```
 
-### Instalacao manual (se preferir copiar na mao)
-Copie as pastas para dentro da pasta `.claude` do seu usuario:
+## Usar
 
-- `skills/design-system`            -> `~/.claude/skills/design-system`
-- `skills/design-motion-principles` -> `~/.claude/skills/design-motion-principles`
-- `design-systems`                  -> `~/.claude/design-systems`
+- `/design` ou pedir natural ("cria a landing X", "redesenha a tela Y"). A skill mostra
+  o contrato de direcao em ~5 linhas antes de codar; voce aprova com "vai".
+- Quer cinema? Diga no brief ("com scrolltelling") - a camada de motion entra sozinha.
+- Refinar: "ta sem graca" / "ta poluido" em linguagem natural, ou `/impeccable bolder`,
+  `quieter`, `distill`, `polish`, `audit` direto.
+- Cole 1-3 URLs de referencia sempre que puder - e o que mais eleva o resultado.
 
-No Windows nativo, `~` e a sua pasta de usuario (ex.: `C:\Users\SeuNome\.claude`).
+## Manutencao (setup da maquina principal)
 
-Depois de copiar, feche e abra o Claude Code de novo.
+Na maquina principal, `~/.claude/skills/design-system` e `~/.claude/skills/motion-choreography`
+sao symlinks para as pastas deste clone em `~/dev/design-skill-claude-code`. Editar aqui
+vale na hora; `git commit + push` versiona. Nao mover/apagar este clone sem refazer os links.
 
----
+## Creditos
 
-## Requisitos (o que precisa ter instalado antes)
-
-1. **Claude Code** - o app/CLI da Anthropic. Sem ele nada roda.
-2. **Node.js** (recomendado) - a skill usa um script que le cores/fontes de
-   sites de referencia. Instale em https://nodejs.org (versao LTS).
-3. **MCP do Playwright** (recomendado) - e o que deixa a skill abrir o navegador
-   pra estudar sites e validar o preview. Sem ele, as fases de validacao pulam.
-   No Claude Code:
-   ```
-   claude mcp add playwright npx '@playwright/mcp@latest'
-   ```
-   e depois `npx playwright install chromium`.
-4. **MCP do shadcn** (opcional) - so pra puxar componentes prontos de estrutura.
-
-Se faltar Playwright ou shadcn, a skill AINDA funciona - ela so avisa que
-pulou a parte que dependia deles. O essencial (perguntas, direcao, geracao do
-preview) roda so com o Claude Code + a biblioteca `design-systems`.
-
----
-
-## O que NAO vem incluso (de proposito)
-
-- **Chave de API de geracao de imagem** (`GEMINI_DESIGN_API_KEY`). Essa chave e
-  pessoal e paga - nao mandei a minha junto. A skill so precisa dela se voce
-  pedir pra gerar imagem paga (Imagen / Nano Banana). O nivel gratis
-  (Pollinations) funciona sem chave nenhuma. Se um dia quiser o nivel pago,
-  pega uma chave em https://aistudio.google.com e configura:
-  ```bash
-  export GEMINI_DESIGN_API_KEY="sua-chave-aqui"
-  ```
-
----
-
-## Como usar (depois de instalado)
-
-1. Abra o Claude Code numa pasta de projeto (ou numa pasta vazia pra so testar).
-2. Digite: `/design`
-3. Responda as perguntas (tipo de produto, vibe, cor, referencias que voce curte).
-4. Ele te mostra uma direcao + moodboard pra aprovar, gera o preview, valida no
-   navegador e te entrega os arquivos pra abrir.
-5. Se gostou, pode pedir pra "aplicar no projeto".
-
-Dica: se voce ja tem um site que curte, cola a URL quando ele perguntar por
-referencias - o resultado fica muito melhor.
-
----
-
-## Problemas comuns
-
-- **"/design nao aparece"**: confira que a pasta `design-system` ficou em
-  `~/.claude/skills/` e reabra o Claude Code.
-- **"pulou a validacao / nao abriu o navegador"**: falta o MCP do Playwright
-  (ver Requisitos, item 3).
-- **"nao achou os design systems"**: a pasta `design-systems` precisa estar em
-  `~/.claude/design-systems` (nao dentro de `skills`).
+- Esqueletos GSAP adaptados de Leonxlnx/taste-skill (MIT); valores e regras de contencao
+  de emilkowalski/skills (MIT, (c) 2026 Emil Kowalski) e jakubkrehel/make-interfaces-feel-better (MIT).
+- Camada de revisao: pbakaus/impeccable (Apache 2.0). Fundacao: anthropics/skills.
